@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chess Game</title>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 2px solid #333;
+            width: 480px;
+        }
+
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            cursor: pointer;
+        }
+
+        .white {
+            background-color: #f0d9b5;
+        }
+
+        .black {
+            background-color: #b58863;
+        }
+
+        .selected {
+            background-color: #7a9f58 !important;
+        }
+
+        .turn-indicator {
+            margin: 20px 0;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="turn-indicator">Current player: White</div>
+    <div class="board" id="board"></div>
+
+    <script>
+        let selectedPiece = null;
+        let currentPlayer = 'white';
+        const boardState = Array(8).fill().map(() => Array(8).fill(null));
+
+        const pieces = {
+            white: {
+                king: '♔',
+                queen: '♕',
+                rook: '♖',
+                bishop: '♗',
+                knight: '♘',
+                pawn: '♙'
+            },
+            black: {
+                king: '♚',
+                queen: '♛',
+                rook: '♜',
+                bishop: '♝',
+                knight: '♞',
+                pawn: '♟'
+            }
+        };
+
+        function initializeBoard() {
+            // Set up pawns
+            for (let i = 0; i < 8; i++) {
+                boardState[1][i] = { type: 'pawn', color: 'black' };
+                boardState[6][i] = { type: 'pawn', color: 'white' };
+            }
+
+            // Set up other pieces
+            const backRow = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+            backRow.forEach((piece, index) => {
+                boardState[0][index] = { type: piece, color: 'black' };
+                boardState[7][index] = { type: piece, color: 'white' };
+            });
+
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(row + col) % 2 === 0 ? 'white' : 'black'}`;
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+
+                    const piece = boardState[row][col];
+                    if (piece) {
+                        square.textContent = pieces[piece.color][piece.type];
+                        square.style.color = piece.color === 'white' ? '#fff' : '#000';
+                    }
+
+                    square.addEventListener('click', handleSquareClick);
+                    board.appendChild(square);
+                }
+            }
+        }
+
+        function handleSquareClick(event) {
+            const row = parseInt(event.target.dataset.row);
+            const col = parseInt(event.target.dataset.col);
+            const piece = boardState[row][col];
+
+            if (selectedPiece) {
+                // Move piece
+                if (isValidMove(selectedPiece.row, selectedPiece.col, row, col)) {
+                    movePiece(selectedPiece.row, selectedPiece.col, row, col);
+                    selectedPiece = null;
+                    currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                    document.querySelector('.turn-indicator').textContent = 
+                        `Current player: ${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}`;
+                }
+                document.querySelectorAll('.square').forEach(sq => sq.classList.remove('selected'));
+            } else if (piece && piece.color === currentPlayer) {
+                // Select piece
+                selectedPiece = { row, col };
+                event.target.classList.add('selected');
+            }
+        }
+
+        function isValidMove(fromRow, fromCol, toRow, toCol) {
+            const piece = boardState[fromRow][fromCol];
+            const targetSquare = boardState[toRow][toCol];
+
+            // Basic validation
+            if (targetSquare && targetSquare.color === piece.color) return false;
+            
+            // Add more specific rules for each piece type here
+            return true;
+        }
+
+        function movePiece(fromRow, fromCol, toRow, toCol) {
+            boardState[toRow][toCol] = boardState[fromRow][fromCol];
+            boardState[fromRow][fromCol] = null;
+            renderBoard();
+        }
+
+        initializeBoard();
+    </script>
+</body>
+</html>
